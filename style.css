@@ -139,6 +139,13 @@ input::placeholder { color: var(--muted-2); }
 }
 .ratio-btn.selected { background: #fff; color: var(--heading); box-shadow: 0 1px 3px rgba(0,0,0,0.10); }
 
+.layout-group { display: flex; gap: 3px; background: #F5F1EA; padding: 3px; border-radius: 9px; margin-top: 8px; }
+.layout-btn {
+  flex: 1; border: none; background: transparent; font-size: 11.5px; font-weight: 700; color: var(--muted);
+  padding: 6px 8px; border-radius: 6px; cursor: pointer; font-family: inherit;
+}
+.layout-btn.selected { background: #fff; color: var(--heading); box-shadow: 0 1px 3px rgba(0,0,0,0.10); }
+
 .room-chips { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .chip {
   border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-weight: 700;
@@ -155,9 +162,17 @@ input::placeholder { color: var(--muted-2); }
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   text-align: center; padding: 0 30px; font-size: 13px; color: var(--muted-2); font-weight: 600;
 }
-.pf-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
-.pf-before.visible, .pf-after.visible { display: block; }
+/* 미리보기 레이어 — 배경(블러) + 전면(정사각)을 한 덩어리로 묶어 전환 효과를 건다 */
+.pf-layer { position: absolute; inset: 0; display: none; }
+.pf-layer.visible { display: block; }
 .pf-after { opacity: 0; }
+
+.pf-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(16px); transform: scale(1.12); }
+.pf-fg { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+
+/* 꽉 채우기 모드 — 배경 없이 사진 한 장이 프레임 전체를 채운다 */
+.preview-frame.layout-fill .pf-bg { display: none; }
+.preview-frame.layout-fill .pf-fg { inset: 0; top: 0; width: 100%; height: 100%; aspect-ratio: auto; transform: none; }
 .pf-tag { position: absolute; top: 14px; background: rgba(0,0,0,0.45); color: #fff; font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 6px; letter-spacing: 0.05em; display: none; }
 .pf-frame-ready .pf-tag { display: block; }
 .pf-tag-before { left: 14px; } .pf-tag-after { right: 14px; }

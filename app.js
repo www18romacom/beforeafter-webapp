@@ -55,6 +55,9 @@ const RATIOS = {
 
 const state = {
   outputRatio: '9:16',
+  // 'square-blur' = 3번 세션(와이케이창호) 방식: 블러 배경 + 정사각 전면
+  // 'fill'        = 사진 한 장이 프레임 전체를 채움
+  frameLayout: 'square-blur',
   title: '구갈동 코오롱하늘채 504동 1904호',
   rooms: [
     { id: 1, name: '안방', before: null, after: null },
@@ -235,7 +238,8 @@ function updatePreviewFrame() {
 
   $('#pfEmpty').style.display = 'none';
   frame.classList.add('pf-frame-ready');
-  before.src = pair.fromUrl; after.src = pair.toUrl;
+  $('#pfBeforeBg').src = pair.fromUrl; $('#pfBeforeFg').src = pair.fromUrl;
+  $('#pfAfterBg').src = pair.toUrl;    $('#pfAfterFg').src = pair.toUrl;
   before.classList.add('visible'); after.classList.add('visible');
   resetAfterLayer();
   $('#pfTagBefore').textContent = pair.fromLabel;
@@ -342,10 +346,20 @@ function pickPreviewRoomIfNeeded() {
 
 function applyOutputRatio() {
   const r = RATIOS[state.outputRatio] || RATIOS['9:16'];
-  $('#previewFrame').style.aspectRatio = r.css;
-  $('#previewSub').textContent = `${r.label} · ${r.w}×${r.h} — 사진은 중앙 기준으로 잘립니다`;
+  const frame = $('#previewFrame');
+  frame.style.aspectRatio = r.css;
+  frame.classList.toggle('layout-fill', state.frameLayout === 'fill');
+
+  const layoutNote = state.frameLayout === 'square-blur'
+    ? '정사각 전면 + 같은 사진 블러 배경'
+    : '사진이 프레임 전체를 채움(중앙 크롭)';
+  $('#previewSub').textContent = `${r.label} · ${r.w}×${r.h} — ${layoutNote}`;
+
   $$('#ratioGroup .ratio-btn').forEach((btn) => {
     btn.classList.toggle('selected', btn.dataset.ratio === state.outputRatio);
+  });
+  $$('#layoutGroup .layout-btn').forEach((btn) => {
+    btn.classList.toggle('selected', btn.dataset.layout === state.frameLayout);
   });
 }
 
@@ -404,6 +418,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = e.target.closest('.ratio-btn');
     if (!btn) return;
     state.outputRatio = btn.dataset.ratio;
+    applyOutputRatio();
+  });
+
+  $('#layoutGroup').addEventListener('click', (e) => {
+    const btn = e.target.closest('.layout-btn');
+    if (!btn) return;
+    state.frameLayout = btn.dataset.layout;
     applyOutputRatio();
   });
 

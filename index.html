@@ -6,7 +6,7 @@
 <title>비포애프터 스튜디오</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -99,6 +99,10 @@
             <button class="ratio-btn" data-ratio="1:1">1:1</button>
           </div>
         </div>
+        <div class="layout-group" id="layoutGroup">
+          <button class="layout-btn selected" data-layout="square-blur">정사각 + 블러 배경</button>
+          <button class="layout-btn" data-layout="fill">꽉 채우기</button>
+        </div>
         <div class="preview-sub" id="previewSub"></div>
       </div>
 
@@ -106,8 +110,14 @@
 
       <div class="preview-frame" id="previewFrame">
         <div class="pf-empty" id="pfEmpty">사진을 업로드하면 여기에 미리보기가 표시됩니다</div>
-        <img class="pf-img pf-before" id="pfBefore" alt="">
-        <img class="pf-img pf-after" id="pfAfter" alt="">
+        <div class="pf-layer pf-before" id="pfBefore">
+          <img class="pf-bg" id="pfBeforeBg" alt="">
+          <img class="pf-fg" id="pfBeforeFg" alt="">
+        </div>
+        <div class="pf-layer pf-after" id="pfAfter">
+          <img class="pf-bg" id="pfAfterBg" alt="">
+          <img class="pf-fg" id="pfAfterFg" alt="">
+        </div>
         <div class="pf-tag pf-tag-before" id="pfTagBefore">BEFORE</div>
         <div class="pf-tag pf-tag-after" id="pfTagAfter">AFTER</div>
         <div class="pf-title-wrap"><div class="pf-title" id="pfTitle"></div></div>
@@ -164,6 +174,6 @@
 
 <input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
