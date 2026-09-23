@@ -169,6 +169,7 @@ input::placeholder { color: var(--muted-2); }
 .pf-progress-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.7s ease; }
 
 .fx-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.fx-header-second { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--card-border); }
 .fx-header span:first-child { font-size: 14px; font-weight: 700; }
 .fx-header-sub { font-size: 11.5px; color: var(--muted); }
 

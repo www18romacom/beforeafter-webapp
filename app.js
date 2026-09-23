@@ -54,7 +54,9 @@ const state = {
   ],
   nextId: 3,
   selectedRoomId: null,
-  selectedEffect: 'dissolve',
+  selectedWithinEffect: 'dissolve', // 한 방 안: 비포 → 애프터
+  selectedRoomEffect: 'fade',       // 방 → 다음 방
+  previewMode: 'within',            // 'within' | 'room'
   dragRoomId: null,
   pendingUpload: null, // { roomId, slot }
 };
@@ -136,16 +138,21 @@ function renderChips() {
   }).join('');
 }
 
-function renderFxGrid() {
-  const grid = $('#fxGrid');
+function effectLabel(id) {
+  const fx = EFFECTS.find((f) => f.id === id);
+  return fx ? fx.label : '';
+}
+
+function renderFxGrid(gridSelector, selectedId, actionName) {
+  const grid = $(gridSelector);
   let lastCat = null;
   let html = '';
   EFFECTS.forEach((fx) => {
     if (fx.cat !== lastCat) { html += `<div class="fx-cat">${fx.cat}</div>`; lastCat = fx.cat; }
     const rot = fx.css.type === 'wipe' ? WIPE_ROT[fx.css.dir] : (fx.css.type === 'slide' ? WIPE_ROT[fx.css.dir] : 0);
-    const selected = fx.id === state.selectedEffect ? ' selected' : '';
+    const selected = fx.id === selectedId ? ' selected' : '';
     html += `
-      <button class="fx-card${selected}" data-action="select-effect" data-effect-id="${fx.id}" data-label="${escapeHtml(fx.label)}">
+      <button class="fx-card${selected}" data-action="${actionName}" data-effect-id="${fx.id}" data-label="${escapeHtml(fx.label)}">
         <div class="fx-check"><svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M4 12l6 6L20 6" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <span style="display:flex;transform:rotate(${rot}deg);">${iconFor(fx)}</span>
         <span>${escapeHtml(fx.label)}</span>
@@ -159,24 +166,74 @@ function renderFxGrid() {
   grid.innerHTML = html;
 }
 
+function renderBothFxGrids() {
+  renderFxGrid('#fxGrid', state.selectedWithinEffect, 'select-effect');
+  renderFxGrid('#roomFxGrid', state.selectedRoomEffect, 'select-room-effect');
+}
+
+// 방 목록 순서상 현재 방 다음에 오는, 사진이 다 채워진 방
+function getNextReadyRoom(currentId) {
+  const idx = state.rooms.findIndex((r) => r.id === currentId);
+  if (idx === -1) return null;
+  for (let i = idx + 1; i < state.rooms.length; i++) {
+    if (roomHasBoth(state.rooms[i])) return state.rooms[i];
+  }
+  return null;
+}
+
+// 지금 미리보기에서 보여줄 두 장 + 라벨 + 효과
+function currentPreviewPair() {
+  const room = state.rooms.find((r) => r.id === state.selectedRoomId);
+  if (!room || !roomHasBoth(room)) return null;
+
+  if (state.previewMode === 'room') {
+    const next = getNextReadyRoom(room.id);
+    if (!next) return null;
+    return {
+      fromUrl: room.after.url,
+      toUrl: next.before.url,
+      fromLabel: `${room.name || '이 방'} 끝`,
+      toLabel: `${next.name || '다음 방'} 시작`,
+      caption: `${room.name || '방'} → ${next.name || '다음 방'} · ${effectLabel(state.selectedRoomEffect)} 전환`,
+      effectId: state.selectedRoomEffect,
+    };
+  }
+
+  return {
+    fromUrl: room.before.url,
+    toUrl: room.after.url,
+    fromLabel: 'BEFORE',
+    toLabel: 'AFTER',
+    caption: `${room.name || '방'} · ${effectLabel(state.selectedWithinEffect)} 전환`,
+    effectId: state.selectedWithinEffect,
+  };
+}
+
 function updatePreviewFrame() {
   const frame = $('#previewFrame');
-  const room = state.rooms.find((r) => r.id === state.selectedRoomId);
   const before = $('#pfBefore'), after = $('#pfAfter');
-  if (!room || !roomHasBoth(room)) {
+  const pair = currentPreviewPair();
+
+  if (!pair) {
     frame.classList.remove('pf-frame-ready');
-    $('#pfEmpty').style.display = 'flex';
+    const empty = $('#pfEmpty');
+    empty.style.display = 'flex';
+    empty.textContent = state.previewMode === 'room'
+      ? '방 전환을 보려면 사진이 채워진 방이 2개 이상 필요합니다'
+      : '사진을 업로드하면 여기에 미리보기가 표시됩니다';
     before.classList.remove('visible'); after.classList.remove('visible');
     return;
   }
+
   $('#pfEmpty').style.display = 'none';
   frame.classList.add('pf-frame-ready');
-  before.src = room.before.url; after.src = room.after.url;
+  before.src = pair.fromUrl; after.src = pair.toUrl;
   before.classList.add('visible'); after.classList.add('visible');
   resetAfterLayer();
+  $('#pfTagBefore').textContent = pair.fromLabel;
+  $('#pfTagAfter').textContent = pair.toLabel;
   $('#pfTitle').textContent = state.title || '';
-  const fx = EFFECTS.find((f) => f.id === state.selectedEffect);
-  $('#pfCaption').textContent = `${room.name || '방'} · ${fx ? fx.label : ''} 전환`;
+  $('#pfCaption').textContent = pair.caption;
   $('#pfProgressFill').style.width = '0%';
 }
 
@@ -192,9 +249,9 @@ function resetAfterLayer() {
 }
 
 function playTransition() {
-  const room = state.rooms.find((r) => r.id === state.selectedRoomId);
-  if (!room || !roomHasBoth(room)) return;
-  const fx = EFFECTS.find((f) => f.id === state.selectedEffect) || EFFECTS[0];
+  const pair = currentPreviewPair();
+  if (!pair) return;
+  const fx = EFFECTS.find((f) => f.id === pair.effectId) || EFFECTS[0];
   const after = $('#pfAfter');
   resetAfterLayer();
 
@@ -279,7 +336,7 @@ function fullRender() {
   renderRooms();
   pickPreviewRoomIfNeeded();
   renderChips();
-  renderFxGrid();
+  renderBothFxGrids();
   updatePreviewFrame();
 }
 
@@ -313,13 +370,17 @@ document.addEventListener('DOMContentLoaded', () => {
     fullRender();
   });
 
-  $('#fxSearch').addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    $$('.fx-card:not(.more)').forEach((card) => {
-      const label = (card.dataset.label || '').toLowerCase();
-      card.classList.toggle('hidden', q.length > 0 && !label.includes(q));
+  function wireFxSearch(inputSelector, gridSelector) {
+    $(inputSelector).addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      $$(`${gridSelector} .fx-card:not(.more)`).forEach((card) => {
+        const label = (card.dataset.label || '').toLowerCase();
+        card.classList.toggle('hidden', q.length > 0 && !label.includes(q));
+      });
     });
-  });
+  }
+  wireFxSearch('#fxSearch', '#fxGrid');
+  wireFxSearch('#roomFxSearch', '#roomFxGrid');
 
   $('#pfPlayBtn').addEventListener('click', playTransition);
 
@@ -376,9 +437,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!room) return;
     room.name = nameInput.value;
     renderChips();
-    if (room.id === state.selectedRoomId) {
-      const fx = EFFECTS.find((f) => f.id === state.selectedEffect);
-      $('#pfCaption').textContent = `${room.name || '방'} · ${fx ? fx.label : ''} 전환`;
+    const pair = currentPreviewPair();
+    if (pair) {
+      $('#pfCaption').textContent = pair.caption;
+      $('#pfTagBefore').textContent = pair.fromLabel;
+      $('#pfTagAfter').textContent = pair.toLabel;
     }
   });
 
@@ -432,16 +495,24 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#previewPanel').addEventListener('click', (e) => {
     const chip = e.target.closest('[data-action="select-room"]');
     if (chip) { state.selectedRoomId = Number(chip.dataset.roomId); renderChips(); updatePreviewFrame(); renderRooms(); return; }
+
     const fxCard = e.target.closest('[data-action="select-effect"]');
     if (fxCard) {
-      state.selectedEffect = fxCard.dataset.effectId;
-      renderFxGrid();
-      const room = state.rooms.find((r) => r.id === state.selectedRoomId);
-      if (room && roomHasBoth(room)) {
-        const fx = EFFECTS.find((f) => f.id === state.selectedEffect);
-        $('#pfCaption').textContent = `${room.name || '방'} · ${fx.label} 전환`;
-        playTransition();
-      }
+      state.selectedWithinEffect = fxCard.dataset.effectId;
+      state.previewMode = 'within';
+      renderBothFxGrids();
+      updatePreviewFrame();
+      playTransition();
+      return;
+    }
+
+    const roomFxCard = e.target.closest('[data-action="select-room-effect"]');
+    if (roomFxCard) {
+      state.selectedRoomEffect = roomFxCard.dataset.effectId;
+      state.previewMode = 'room';
+      renderBothFxGrids();
+      updatePreviewFrame();
+      playTransition();
       return;
     }
     if (e.target.closest('[data-action="more-effects"]')) {
