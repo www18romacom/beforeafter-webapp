@@ -56,15 +56,16 @@ const RATIOS = {
 // 애프터 사진 보정 강도.
 // 참고: 3번 세션(와이케이창호)은 명암 +4% / 채도 +6% 수준이라 실제로는 티가 안 났음 —
 // 여기서는 눈에 보이는 수준으로 올리고, 직접 비교해서 고를 수 있게 단계로 뒀다.
-const ENHANCE = {
-  off:    { label: '보정 없음', filter: 'none', note: '원본 그대로' },
-  basic:  { label: '기본',     filter: 'saturate(1.18) contrast(1.10) brightness(1.03)', note: '채도 +18% · 명암 +10% · 밝기 +3%' },
-  strong: { label: '강하게',   filter: 'saturate(1.35) contrast(1.20) brightness(1.06)', note: '채도 +35% · 명암 +20% · 밝기 +6%' },
+// 프리셋은 슬라이더의 시작값일 뿐 — 슬라이더를 움직이면 '직접 설정'으로 바뀐다.
+const ENHANCE_PRESETS = {
+  basic:  { sat: 118, con: 110, bri: 103 },
+  strong: { sat: 135, con: 120, bri: 106 },
 };
 
 const state = {
   outputRatio: '9:16',
-  enhanceLevel: 'basic',
+  enhanceLevel: 'basic',                        // 'off' | 'basic' | 'strong' | 'custom'
+  enhanceValues: { ...ENHANCE_PRESETS.basic },  // 실제 적용되는 수치(%)
   // 'square-blur' = 3번 세션(와이케이창호) 방식: 블러 배경 + 정사각 전면
   // 'fill'        = 사진 한 장이 프레임 전체를 채움
   frameLayout: 'square-blur',
@@ -190,6 +191,7 @@ function renderFxGrid(gridSelector, selectedId, actionName) {
 function renderBothFxGrids() {
   renderFxGrid('#fxGrid', state.selectedWithinEffect, 'select-effect');
   renderFxGrid('#roomFxGrid', state.selectedRoomEffect, 'select-room-effect');
+  saveSettings();
 }
 
 // 방 목록 순서상 현재 방 다음에 오는, 사진이 다 채워진 방
@@ -379,12 +381,58 @@ function applyOutputRatio() {
     btn.classList.toggle('selected', btn.dataset.layout === state.frameLayout);
   });
 
-  const en = ENHANCE[state.enhanceLevel] || ENHANCE.basic;
-  frame.style.setProperty('--enhance-filter', en.filter);
-  $('#enhanceSub').textContent = `애프터 사진에만 적용 — ${en.note}`;
+  const v = state.enhanceValues;
+  const off = state.enhanceLevel === 'off';
+  frame.style.setProperty(
+    '--enhance-filter',
+    off ? 'none' : `saturate(${v.sat / 100}) contrast(${v.con / 100}) brightness(${v.bri / 100})`
+  );
+
+  const pct = (n) => (n >= 100 ? `+${n - 100}%` : `${n - 100}%`);
+  const prefix = state.enhanceLevel === 'custom' ? '직접 설정' : '애프터 사진에만 적용';
+  $('#enhanceSub').textContent = off
+    ? '애프터 사진도 원본 그대로 나갑니다'
+    : `${prefix} — 채도 ${pct(v.sat)} · 명암 ${pct(v.con)} · 밝기 ${pct(v.bri)}`;
+
   $$('#enhanceGroup .enhance-btn').forEach((btn) => {
     btn.classList.toggle('selected', btn.dataset.enhance === state.enhanceLevel);
   });
+  $('#sliderBlock').classList.toggle('disabled', off);
+
+  $('#satSlider').value = v.sat; $('#satVal').textContent = `${v.sat}%`;
+  $('#conSlider').value = v.con; $('#conVal').textContent = `${v.con}%`;
+  $('#briSlider').value = v.bri; $('#briVal').textContent = `${v.bri}%`;
+
+  saveSettings();
+}
+
+const SETTINGS_KEY = 'beforeafter-studio-settings';
+
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      outputRatio: state.outputRatio,
+      frameLayout: state.frameLayout,
+      enhanceLevel: state.enhanceLevel,
+      enhanceValues: state.enhanceValues,
+      selectedWithinEffect: state.selectedWithinEffect,
+      selectedRoomEffect: state.selectedRoomEffect,
+    }));
+  } catch (e) { /* 사생활 보호 모드 등 — 저장 못 해도 동작에는 지장 없음 */ }
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (RATIOS[s.outputRatio]) state.outputRatio = s.outputRatio;
+    if (s.frameLayout === 'fill' || s.frameLayout === 'square-blur') state.frameLayout = s.frameLayout;
+    if (['off', 'basic', 'strong', 'custom'].includes(s.enhanceLevel)) state.enhanceLevel = s.enhanceLevel;
+    if (s.enhanceValues && typeof s.enhanceValues.sat === 'number') state.enhanceValues = s.enhanceValues;
+    if (EFFECTS.some((f) => f.id === s.selectedWithinEffect)) state.selectedWithinEffect = s.selectedWithinEffect;
+    if (EFFECTS.some((f) => f.id === s.selectedRoomEffect)) state.selectedRoomEffect = s.selectedRoomEffect;
+  } catch (e) { /* 저장된 설정이 깨졌으면 기본값으로 시작 */ }
 }
 
 function fullRender() {
@@ -414,6 +462,7 @@ function removeFile(roomId, slot) {
 
 // ---- Event delegation ----
 document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
   fullRender();
 
   $('#titleInput').addEventListener('input', (e) => {
@@ -456,6 +505,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = e.target.closest('.enhance-btn');
     if (!btn) return;
     state.enhanceLevel = btn.dataset.enhance;
+    // 프리셋을 누르면 슬라이더 값도 그 프리셋으로 맞춘다('끄기'는 수치를 건드리지 않음)
+    if (ENHANCE_PRESETS[state.enhanceLevel]) {
+      state.enhanceValues = { ...ENHANCE_PRESETS[state.enhanceLevel] };
+    }
+    applyOutputRatio();
+    updatePreviewFrame();
+  });
+
+  // 슬라이더를 직접 움직이면 '직접 설정' 상태가 된다
+  [['#satSlider', 'sat'], ['#conSlider', 'con'], ['#briSlider', 'bri']].forEach(([sel, key]) => {
+    $(sel).addEventListener('input', (e) => {
+      state.enhanceValues[key] = Number(e.target.value);
+      state.enhanceLevel = 'custom';
+      applyOutputRatio();
+      updatePreviewFrame();
+    });
+  });
+
+  $('#enhanceResetBtn').addEventListener('click', () => {
+    state.enhanceLevel = 'basic';
+    state.enhanceValues = { ...ENHANCE_PRESETS.basic };
     applyOutputRatio();
     updatePreviewFrame();
   });

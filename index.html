@@ -6,7 +6,7 @@
 <title>비포애프터 스튜디오</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -111,6 +111,26 @@
             <button class="enhance-btn" data-enhance="strong">강하게</button>
           </div>
         </div>
+
+        <div class="slider-block" id="sliderBlock">
+          <div class="slider-row">
+            <span class="slider-name">채도</span>
+            <input type="range" id="satSlider" min="100" max="200" step="1">
+            <span class="slider-val" id="satVal"></span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-name">명암</span>
+            <input type="range" id="conSlider" min="100" max="160" step="1">
+            <span class="slider-val" id="conVal"></span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-name">밝기</span>
+            <input type="range" id="briSlider" min="90" max="130" step="1">
+            <span class="slider-val" id="briVal"></span>
+          </div>
+          <button class="slider-reset" id="enhanceResetBtn">기본값으로 되돌리기</button>
+        </div>
+
         <div class="preview-sub" id="previewSub"></div>
         <div class="preview-sub" id="enhanceSub"></div>
       </div>
@@ -183,6 +203,6 @@
 
 <input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
