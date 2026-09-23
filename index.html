@@ -6,7 +6,7 @@
 <title>비포애프터 스튜디오</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -103,7 +103,16 @@
           <button class="layout-btn selected" data-layout="square-blur">정사각 + 블러 배경</button>
           <button class="layout-btn" data-layout="fill">꽉 채우기</button>
         </div>
+        <div class="enhance-row">
+          <span class="enhance-label">애프터 사진 보정</span>
+          <div class="enhance-group" id="enhanceGroup">
+            <button class="enhance-btn" data-enhance="off">끄기</button>
+            <button class="enhance-btn selected" data-enhance="basic">기본</button>
+            <button class="enhance-btn" data-enhance="strong">강하게</button>
+          </div>
+        </div>
         <div class="preview-sub" id="previewSub"></div>
+        <div class="preview-sub" id="enhanceSub"></div>
       </div>
 
       <div class="room-chips" id="roomChips"></div>
@@ -174,6 +183,6 @@
 
 <input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
 
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

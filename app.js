@@ -53,8 +53,18 @@ const RATIOS = {
   '1:1':  { label: '정사각',     w: 1080, h: 1080, css: '1 / 1' },
 };
 
+// 애프터 사진 보정 강도.
+// 참고: 3번 세션(와이케이창호)은 명암 +4% / 채도 +6% 수준이라 실제로는 티가 안 났음 —
+// 여기서는 눈에 보이는 수준으로 올리고, 직접 비교해서 고를 수 있게 단계로 뒀다.
+const ENHANCE = {
+  off:    { label: '보정 없음', filter: 'none', note: '원본 그대로' },
+  basic:  { label: '기본',     filter: 'saturate(1.18) contrast(1.10) brightness(1.03)', note: '채도 +18% · 명암 +10% · 밝기 +3%' },
+  strong: { label: '강하게',   filter: 'saturate(1.35) contrast(1.20) brightness(1.06)', note: '채도 +35% · 명암 +20% · 밝기 +6%' },
+};
+
 const state = {
   outputRatio: '9:16',
+  enhanceLevel: 'basic',
   // 'square-blur' = 3번 세션(와이케이창호) 방식: 블러 배경 + 정사각 전면
   // 'fill'        = 사진 한 장이 프레임 전체를 채움
   frameLayout: 'square-blur',
@@ -207,6 +217,8 @@ function currentPreviewPair() {
       toLabel: `${next.name || '다음 방'} 시작`,
       caption: `${room.name || '방'} → ${next.name || '다음 방'} · ${effectLabel(state.selectedRoomEffect)} 전환`,
       effectId: state.selectedRoomEffect,
+      fromIsAfterPhoto: true,   // 현재 방의 애프터 사진
+      toIsAfterPhoto: false,    // 다음 방의 비포 사진
     };
   }
 
@@ -217,6 +229,8 @@ function currentPreviewPair() {
     toLabel: 'AFTER',
     caption: `${room.name || '방'} · ${effectLabel(state.selectedWithinEffect)} 전환`,
     effectId: state.selectedWithinEffect,
+    fromIsAfterPhoto: false,
+    toIsAfterPhoto: true,
   };
 }
 
@@ -241,6 +255,9 @@ function updatePreviewFrame() {
   $('#pfBeforeBg').src = pair.fromUrl; $('#pfBeforeFg').src = pair.fromUrl;
   $('#pfAfterBg').src = pair.toUrl;    $('#pfAfterFg').src = pair.toUrl;
   before.classList.add('visible'); after.classList.add('visible');
+  const enhanceOn = state.enhanceLevel !== 'off';
+  before.classList.toggle('enhanced', enhanceOn && pair.fromIsAfterPhoto);
+  after.classList.toggle('enhanced', enhanceOn && pair.toIsAfterPhoto);
   resetAfterLayer();
   $('#pfTagBefore').textContent = pair.fromLabel;
   $('#pfTagAfter').textContent = pair.toLabel;
@@ -361,6 +378,13 @@ function applyOutputRatio() {
   $$('#layoutGroup .layout-btn').forEach((btn) => {
     btn.classList.toggle('selected', btn.dataset.layout === state.frameLayout);
   });
+
+  const en = ENHANCE[state.enhanceLevel] || ENHANCE.basic;
+  frame.style.setProperty('--enhance-filter', en.filter);
+  $('#enhanceSub').textContent = `애프터 사진에만 적용 — ${en.note}`;
+  $$('#enhanceGroup .enhance-btn').forEach((btn) => {
+    btn.classList.toggle('selected', btn.dataset.enhance === state.enhanceLevel);
+  });
 }
 
 function fullRender() {
@@ -426,6 +450,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!btn) return;
     state.frameLayout = btn.dataset.layout;
     applyOutputRatio();
+  });
+
+  $('#enhanceGroup').addEventListener('click', (e) => {
+    const btn = e.target.closest('.enhance-btn');
+    if (!btn) return;
+    state.enhanceLevel = btn.dataset.enhance;
+    applyOutputRatio();
+    updatePreviewFrame();
   });
 
   $('#pfPlayBtn').addEventListener('click', playTransition);

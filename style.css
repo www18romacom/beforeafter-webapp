@@ -146,6 +146,15 @@ input::placeholder { color: var(--muted-2); }
 }
 .layout-btn.selected { background: #fff; color: var(--heading); box-shadow: 0 1px 3px rgba(0,0,0,0.10); }
 
+.enhance-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.enhance-label { font-size: 11.5px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+.enhance-group { display: flex; gap: 3px; background: #F5F1EA; padding: 3px; border-radius: 9px; }
+.enhance-btn {
+  border: none; background: transparent; font-size: 11.5px; font-weight: 700; color: var(--muted);
+  padding: 5px 9px; border-radius: 6px; cursor: pointer; font-family: inherit;
+}
+.enhance-btn.selected { background: #fff; color: var(--heading); box-shadow: 0 1px 3px rgba(0,0,0,0.10); }
+
 .room-chips { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .chip {
   border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-weight: 700;
@@ -169,6 +178,10 @@ input::placeholder { color: var(--muted-2); }
 
 .pf-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(16px); transform: scale(1.12); }
 .pf-fg { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+
+/* 애프터 사진 보정 — 실제 렌더링 때 적용될 보정을 미리보기에서 근사해 보여준다 */
+.pf-layer.enhanced .pf-fg { filter: var(--enhance-filter, none); }
+.pf-layer.enhanced .pf-bg { filter: blur(16px) var(--enhance-filter, none); }
 
 /* 꽉 채우기 모드 — 배경 없이 사진 한 장이 프레임 전체를 채운다 */
 .preview-frame.layout-fill .pf-bg { display: none; }
