@@ -46,7 +46,15 @@ function iconFor(effect) {
 }
 const WIPE_ROT = { right: 0, left: 180, down: 90, up: 270 };
 
+// 출력 규격 — 사진은 이 비율에 맞춰 중앙 기준으로 잘린다(center crop)
+const RATIOS = {
+  '9:16': { label: '쇼츠 · 릴스', w: 1080, h: 1920, css: '9 / 16' },
+  '4:5':  { label: '인스타 세로', w: 1080, h: 1350, css: '4 / 5' },
+  '1:1':  { label: '정사각',     w: 1080, h: 1080, css: '1 / 1' },
+};
+
 const state = {
+  outputRatio: '9:16',
   title: '구갈동 코오롱하늘채 504동 1904호',
   rooms: [
     { id: 1, name: '안방', before: null, after: null },
@@ -332,7 +340,17 @@ function pickPreviewRoomIfNeeded() {
   state.selectedRoomId = firstReady ? firstReady.id : null;
 }
 
+function applyOutputRatio() {
+  const r = RATIOS[state.outputRatio] || RATIOS['9:16'];
+  $('#previewFrame').style.aspectRatio = r.css;
+  $('#previewSub').textContent = `${r.label} · ${r.w}×${r.h} — 사진은 중앙 기준으로 잘립니다`;
+  $$('#ratioGroup .ratio-btn').forEach((btn) => {
+    btn.classList.toggle('selected', btn.dataset.ratio === state.outputRatio);
+  });
+}
+
 function fullRender() {
+  applyOutputRatio();
   renderRooms();
   pickPreviewRoomIfNeeded();
   renderChips();
@@ -381,6 +399,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   wireFxSearch('#fxSearch', '#fxGrid');
   wireFxSearch('#roomFxSearch', '#roomFxGrid');
+
+  $('#ratioGroup').addEventListener('click', (e) => {
+    const btn = e.target.closest('.ratio-btn');
+    if (!btn) return;
+    state.outputRatio = btn.dataset.ratio;
+    applyOutputRatio();
+  });
 
   $('#pfPlayBtn').addEventListener('click', playTransition);
 
